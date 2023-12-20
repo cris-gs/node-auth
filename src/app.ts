@@ -9,9 +9,9 @@ import { Server } from "./presentation/server";
 })()
 
 async function main () {
-    // todo: await base de datos
+    // todo: await data base
 
-    // todo: inicio de nuestro server
+    // todo: start our server
     new Server({
         port: envs.PORT,
         routes: AppRoutes.routes
