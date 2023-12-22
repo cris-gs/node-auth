@@ -1,6 +1,6 @@
 import { BcryptAdapter } from "../../config";
 import { UserModel } from "../../data/mongodb";
-import { AuthDatasource, CustomError, RegisterUserDto, UserEntity } from "../../domain";
+import { AuthDatasource, CustomError, LoginUserDto, RegisterUserDto, UserEntity } from "../../domain";
 import { UserMapper } from "../mappers/user.mapper";
 
 
@@ -13,6 +13,31 @@ export class AuthDatasourceImpl implements AuthDatasource {
         private readonly hashPassword: HashFunction = BcryptAdapter.hash,
         private readonly comparePassword: compareFunction = BcryptAdapter.compare,
     ) {}
+
+    async login(loginUserDto: LoginUserDto): Promise<UserEntity> {
+        
+        const { email, password } = loginUserDto;
+
+        try {
+
+            const user =  await UserModel.findOne({ email });
+            if ( !user ) throw CustomError.badRequest('Invalid credentials');
+
+            const isMatching = this.comparePassword(password, user.password)
+            if( !isMatching ) throw CustomError.badRequest('Invalid credentials');
+
+            return UserMapper.UserEntityFromObject(user);
+            
+        } catch (error) {
+            
+            if ( error instanceof CustomError ){
+                throw error;
+            }
+            throw CustomError.internalServer();
+
+        }
+
+    }
 
     async register(registerUserDto: RegisterUserDto): Promise<UserEntity> {
        
@@ -31,12 +56,9 @@ export class AuthDatasourceImpl implements AuthDatasource {
                 password: this.hashPassword( password ),
             });
 
-            console.log(this.hashPassword)
-
             await user.save();
 
             // 3. Map the response to our entity
-            // todo: a mapper is missing
             return UserMapper.UserEntityFromObject(user);
             
         } catch (error) {
